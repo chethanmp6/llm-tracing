@@ -5,6 +5,9 @@ A FastAPI service for analyzing LiteLLM proxy analytics data stored in PostgreSQ
 ## Features
 
 - **Agent Analytics**: Get detailed metrics for specific agents and versions
+- **Activity Timeline**: Daily session activity tracking
+- **Token Usage Analytics**: Daily and total token consumption metrics
+- **Recent Messages**: Retrieve recent message content with metadata
 - **Time-based Filtering**: Analyze data over configurable time periods
 - **Health Monitoring**: Built-in health check endpoint
 - **OpenAPI Documentation**: Automatic API documentation
@@ -43,6 +46,188 @@ curl "http://localhost:8000/analytics/agent?agent_name=Calculator%20Bot&agent_ve
     "start_date": "2024-01-01",
     "end_date": "2024-12-05"
   }
+}
+```
+
+### GET /activitytimeline
+
+Get daily session activity timeline for a specific agent and version.
+
+**Query Parameters:**
+- `agent_name` (required): Filter by agent name
+- `agent_version` (required): Filter by agent version
+- `days` (required): Number of days to look back (1, 2, 7, 15, or 20)
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/activitytimeline?agent_name=Calculator%20Bot&agent_version=1.0.0&days=7"
+```
+
+**Example Response:**
+```json
+{
+  "agent_name": "Calculator Bot",
+  "agent_version": "1.0.0",
+  "date_range": {
+    "start_date": "2024-11-28",
+    "end_date": "2024-12-05"
+  },
+  "daily_sessions": [
+    {
+      "date": "2024-11-28",
+      "sessions": 12
+    },
+    {
+      "date": "2024-11-29",
+      "sessions": 8
+    }
+  ]
+}
+```
+
+### GET /tokens-usage
+
+Get daily token usage (prompt and completion tokens) for a specific agent and version.
+
+**Query Parameters:**
+- `agent_name` (required): Filter by agent name
+- `agent_version` (required): Filter by agent version
+- `days` (required): Number of days to look back (1, 2, 7, 15, or 20)
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/tokens-usage?agent_name=Calculator%20Bot&agent_version=1.0.0&days=7"
+```
+
+**Example Response:**
+```json
+{
+  "agent_name": "Calculator Bot",
+  "agent_version": "1.0.0",
+  "date_range": {
+    "start_date": "2024-11-28",
+    "end_date": "2024-12-05"
+  },
+  "daily_tokens": [
+    {
+      "date": "2024-11-28",
+      "prompt_tokens": 1250,
+      "completion_tokens": 875
+    },
+    {
+      "date": "2024-11-29",
+      "prompt_tokens": 980,
+      "completion_tokens": 650
+    }
+  ]
+}
+```
+
+### GET /total-tokens
+
+Get total token consumption summary for a specific agent and version.
+
+**Query Parameters:**
+- `agent_name` (required): Filter by agent name
+- `agent_version` (required): Filter by agent version
+- `days` (required): Number of days to look back (1, 2, 7, 15, or 20)
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/total-tokens?agent_name=Calculator%20Bot&agent_version=1.0.0&days=7"
+```
+
+**Example Response:**
+```json
+{
+  "agent_name": "Calculator Bot",
+  "agent_version": "1.0.0",
+  "date_range": {
+    "start_date": "2024-11-28",
+    "end_date": "2024-12-05"
+  },
+  "total_prompt_tokens": 8750,
+  "total_completion_tokens": 6250
+}
+```
+
+### GET /detailed-usage
+
+Get detailed usage logs with individual request information.
+
+**Query Parameters:**
+- `agent_name` (required): Filter by agent name
+- `agent_version` (required): Filter by agent version
+- `days` (required): Number of days to look back (1, 2, 7, 15, or 20)
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/detailed-usage?agent_name=Calculator%20Bot&agent_version=1.0.0&days=7"
+```
+
+**Example Response:**
+```json
+{
+  "agent_name": "Calculator Bot",
+  "agent_version": "1.0.0",
+  "date_range": {
+    "start_date": "2024-11-28",
+    "end_date": "2024-12-05"
+  },
+  "usage_logs": [
+    {
+      "timestamp": "2024-12-05T14:30:00",
+      "agent_name": "Calculator Bot",
+      "total_tokens": 125,
+      "prompt_tokens": 75,
+      "completion_tokens": 50,
+      "duration_seconds": 2.5
+    }
+  ]
+}
+```
+
+### GET /recentmessages
+
+Get recent messages with content and metadata for a specific agent and version.
+
+**Query Parameters:**
+- `agent_name` (required): Filter by agent name
+- `agent_version` (required): Filter by agent version
+- `days` (required): Number of days to look back (1, 2, 7, 15, or 20)
+
+**Example Request:**
+```bash
+curl "http://localhost:8000/recentmessages?agent_name=Customer%20Support%20Agent&agent_version=1.0.0&days=7"
+```
+
+**Example Response:**
+```json
+{
+  "agent_name": "Customer Support Agent",
+  "agent_version": "1.0.0",
+  "date_range": {
+    "start_date": "2024-11-28",
+    "end_date": "2024-12-05"
+  },
+  "messages": [
+    {
+      "timestamp": "2024-12-05T14:30:00",
+      "session_id": "session_abc123",
+      "message_length": 147,
+      "agent_name": "Customer Support Agent",
+      "model_name": "gpt-4",
+      "message": "Hello! I'm here to help you with your account. What specific issue are you experiencing today?"
+    },
+    {
+      "timestamp": "2024-12-05T14:25:00",
+      "session_id": "session_xyz789",
+      "message_length": 89,
+      "agent_name": "Customer Support Agent",
+      "model_name": "gpt-4",
+      "message": "Thank you for contacting support. Let me look into that billing question for you."
+    }
+  ]
 }
 ```
 
@@ -256,6 +441,21 @@ curl http://localhost:8000/health
 
 # Analytics endpoint
 curl "http://localhost:8000/analytics/agent?agent_name=MyAgent&agent_version=1.0.0&days=7"
+
+# Activity timeline
+curl "http://localhost:8000/activitytimeline?agent_name=MyAgent&agent_version=1.0.0&days=7"
+
+# Token usage
+curl "http://localhost:8000/tokens-usage?agent_name=MyAgent&agent_version=1.0.0&days=7"
+
+# Total tokens
+curl "http://localhost:8000/total-tokens?agent_name=MyAgent&agent_version=1.0.0&days=7"
+
+# Detailed usage logs
+curl "http://localhost:8000/detailed-usage?agent_name=MyAgent&agent_version=1.0.0&days=7"
+
+# Recent messages
+curl "http://localhost:8000/recentmessages?agent_name=MyAgent&agent_version=1.0.0&days=7"
 
 # API documentation
 open http://localhost:8000/docs
