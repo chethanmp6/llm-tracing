@@ -460,3 +460,7 @@ curl "http://localhost:8000/recentmessages?agent_name=MyAgent&agent_version=1.0.
 # API documentation
 open http://localhost:8000/docs
 ```
+
+
+Deployed endpoint url in aws 
+http://k8s-default-tracinga-79a9c76211-872069928.ap-south-1.elb.amazonaws.com/docs

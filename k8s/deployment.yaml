@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tracing-api
+  namespace: default
+  labels:
+    app: tracing-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: tracing-api
+  template:
+    metadata:
+      labels:
+        app: tracing-api
+    spec:
+      containers:
+      - name: tracing-api
+        image: 187135693153.dkr.ecr.ap-south-1.amazonaws.com/tracing-api:latest
+        ports:
+        - containerPort: 8000
+        envFrom:
+        - configMapRef:
+            name: tracing-api-config
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5

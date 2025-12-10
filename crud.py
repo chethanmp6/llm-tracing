@@ -89,8 +89,9 @@ def _process_analytics_result(row, start_date: datetime, end_date: datetime, day
 async def check_database_connection(db: AsyncSession) -> bool:
     """Check if database connection is working."""
     try:
-        result = await db.execute(text("SELECT 1"))
-        return result.fetchone() is not None
+        result = await db.execute(text('SELECT 1'))
+        row = result.first()
+        return row is not None
     except Exception as e:
         logger.error(f"Database connection check failed: {e}")
         return False

@@ -7,10 +7,10 @@ from sqlalchemy.pool import NullPool
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+asyncpg://user:password@localhost/dbname")
+ENGINE_DATABASE_URL = os.getenv("ENGINE_DATABASE_URL", "postgresql+asyncpg://user:password@localhost/dbname")
 
 engine = create_async_engine(
-    DATABASE_URL,
+    ENGINE_DATABASE_URL,
     poolclass=NullPool,
     echo=False,
     future=True

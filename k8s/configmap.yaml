@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tracing-api-config
+  namespace: default
+data:
+  ENGINE_DATABASE_URL: "postgresql+asyncpg://postgres:Letmeloginawsdb345@database-1.c7gkwcug8x4x.ap-south-1.rds.amazonaws.com:5432/litellm"
+  HOST: "0.0.0.0"
+  PORT: "8000"
