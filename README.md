@@ -462,5 +462,16 @@ open http://localhost:8000/docs
 ```
 
 
-Deployed endpoint url in aws 
-http://k8s-default-tracinga-79a9c76211-872069928.ap-south-1.elb.amazonaws.com/docs
+#Update meta to messages - Sample curl
+curl --location 'http://localhost:8000/update-messages' \
+--header 'Content-Type: application/json' \
+--data '{
+      "request_id": "6c871bee-4175-44b6-8e83-8c881daef3b6",
+      "agent_metadata": {
+        "agent_name": "test_agent",
+        "agent_user_id": "chat-user-123",
+        "agent_version": "1.0.0",
+        "agent_app_name": "Customer Support",
+        "agent_session_id": "session-123"
+      }
+    }'

@@ -92,3 +92,19 @@ class RecentMessagesResponse(BaseModel):
     agent_version: str
     date_range: DateRange
     messages: list[RecentMessage]
+
+class AgentMetadata(BaseModel):
+    agent_name: str = Field(..., description="Name of the agent")
+    agent_user_id: str = Field(..., description="User ID associated with the agent")
+    agent_version: str = Field(..., description="Version of the agent")
+    agent_app_name: str = Field(..., description="Application name for the agent")
+    agent_session_id: str = Field(..., description="Session ID for the agent")
+
+class UpdateMessagesRequest(BaseModel):
+    request_id: str = Field(..., description="Request ID to update")
+    agent_metadata: AgentMetadata = Field(..., description="Agent metadata to insert into messages column")
+
+class UpdateMessagesResponse(BaseModel):
+    status: str = Field(..., description="Status of the update operation")
+    request_id: str = Field(..., description="Updated request ID")
+    message: str = Field(..., description="Success or error message")

@@ -4,6 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from datetime import datetime, timedelta
 from typing import Optional, Dict, Any
 import logging
+import json
 
 logger = logging.getLogger(__name__)
 
@@ -544,4 +545,112 @@ async def get_available_tables(db: AsyncSession) -> list:
     except Exception as e:
         logger.error(f"Error getting table list: {e}")
         return []
+
+async def update_messages_column(
+    db: AsyncSession,
+    request_id: str,
+    agent_metadata: Dict[str, Any]
+) -> Optional[Dict[str, Any]]:
+    """
+    Update the messages column in LiteLLM_SpendLogs table with agent metadata.
+
+    Args:
+        db: Database session
+        request_id: The request_id to update
+        agent_metadata: Dictionary containing agent metadata to insert
+
+    Returns:
+        Dict with success status and details, or None if failed
+    """
+    try:
+        logger.info(f"Starting update for request_id: {request_id} with metadata: {agent_metadata}")
+
+        # First check if the table and column exist
+        table_check_query = text("""
+            SELECT column_name
+            FROM information_schema.columns
+            WHERE table_name = 'LiteLLM_SpendLogs'
+            AND column_name = 'messages'
+        """)
+
+        table_result = await db.execute(table_check_query)
+        column_exists = table_result.fetchone()
+
+        if not column_exists:
+            logger.error("Column 'messages' does not exist in LiteLLM_SpendLogs table")
+            return {
+                "success": False,
+                "error": "Column 'messages' does not exist in LiteLLM_SpendLogs table",
+                "request_id": request_id
+            }
+
+        # Check if the request_id exists
+        check_query = text("""
+            SELECT request_id FROM "LiteLLM_SpendLogs"
+            WHERE request_id = :request_id
+        """)
+
+        result = await db.execute(check_query, {"request_id": request_id})
+        existing_row = result.fetchone()
+
+        if not existing_row:
+            logger.warning(f"Request ID {request_id} not found in LiteLLM_SpendLogs")
+            return {
+                "success": False,
+                "error": f"Request ID {request_id} not found",
+                "request_id": request_id
+            }
+
+        logger.info(f"Request ID {request_id} found, proceeding with update")
+
+        # Update the messages column with agent metadata
+        # AsyncPG requires JSON string for JSONB columns
+        agent_metadata_json = json.dumps(agent_metadata)
+        logger.info(f"Updating with agent_metadata JSON: {agent_metadata_json}")
+
+        update_query = text("""
+            UPDATE "LiteLLM_SpendLogs"
+            SET messages = :agent_metadata
+            WHERE request_id = :request_id
+        """)
+
+        result = await db.execute(update_query, {
+            "request_id": request_id,
+            "agent_metadata": agent_metadata_json
+        })
+
+        # Explicitly commit the transaction
+        await db.commit()
+
+        # Verify the update was successful
+        rows_affected = result.rowcount
+        logger.info(f"Update executed, rows affected: {rows_affected}")
+
+        if rows_affected == 0:
+            logger.warning(f"No rows were updated for request_id: {request_id}")
+            return {
+                "success": False,
+                "error": f"No rows were updated for request_id: {request_id}",
+                "request_id": request_id
+            }
+
+        logger.info(f"Successfully updated messages column for request_id: {request_id}")
+
+        return {
+            "success": True,
+            "request_id": request_id,
+            "updated_metadata": agent_metadata,
+            "rows_affected": rows_affected
+        }
+
+    except Exception as e:
+        logger.error(f"Detailed error updating messages column for request_id {request_id}: {str(e)}")
+        logger.error(f"Error type: {type(e).__name__}")
+        import traceback
+        logger.error(f"Traceback: {traceback.format_exc()}")
+        return {
+            "success": False,
+            "error": str(e),
+            "request_id": request_id
+        }
 

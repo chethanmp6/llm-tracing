@@ -7,8 +7,8 @@ import logging
 import os
 
 from database import get_database, close_database
-from schemas import AnalyticsResponse, HealthResponse, ErrorResponse, Metrics, DateRange, ActivityTimelineResponse, DailySessionActivity, TokensUsageResponse, DailyTokenUsage, TotalTokensResponse, DetailedUsageResponse, DetailedUsageLog, RecentMessagesResponse, RecentMessage
-from crud import get_agent_analytics, check_database_connection, get_agent_activity_timeline, get_agent_tokens_usage, get_agent_total_tokens, get_agent_detailed_usage, get_recent_messages
+from schemas import AnalyticsResponse, HealthResponse, ErrorResponse, Metrics, DateRange, ActivityTimelineResponse, DailySessionActivity, TokensUsageResponse, DailyTokenUsage, TotalTokensResponse, DetailedUsageResponse, DetailedUsageLog, RecentMessagesResponse, RecentMessage, UpdateMessagesRequest, UpdateMessagesResponse
+from crud import get_agent_analytics, check_database_connection, get_agent_activity_timeline, get_agent_tokens_usage, get_agent_total_tokens, get_agent_detailed_usage, get_recent_messages, update_messages_column
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
@@ -545,6 +545,81 @@ async def get_recent_messages_endpoint(
         raise HTTPException(
             status_code=500,
             detail="Failed to fetch recent messages data"
+        )
+
+@app.post("/update-messages", response_model=UpdateMessagesResponse)
+async def update_messages_endpoint(
+    request: UpdateMessagesRequest,
+    db: AsyncSession = Depends(get_database)
+):
+    """
+    Update the messages column in LiteLLM_SpendLogs table with agent metadata.
+
+    Args:
+        request: UpdateMessagesRequest containing request_id and agent_metadata
+
+    Returns:
+        UpdateMessagesResponse: Status of the update operation
+
+    Raises:
+        HTTPException: 400 for invalid request_id, 500 for server errors
+    """
+    try:
+        logger.info(f"Updating messages column for request_id: {request.request_id}")
+
+        # Convert agent metadata to dictionary
+        agent_metadata_dict = {
+            "agent_name": request.agent_metadata.agent_name,
+            "agent_user_id": request.agent_metadata.agent_user_id,
+            "agent_version": request.agent_metadata.agent_version,
+            "agent_app_name": request.agent_metadata.agent_app_name,
+            "agent_session_id": request.agent_metadata.agent_session_id
+        }
+
+        # Call CRUD function to update messages column
+        result = await update_messages_column(
+            db=db,
+            request_id=request.request_id,
+            agent_metadata=agent_metadata_dict
+        )
+
+        if result is None:
+            raise HTTPException(
+                status_code=500,
+                detail="Failed to update messages column"
+            )
+
+        if not result.get("success", False):
+            error_msg = result.get("error", "Unknown error")
+            if "not found" in error_msg:
+                raise HTTPException(
+                    status_code=404,
+                    detail=f"Request ID {request.request_id} not found"
+                )
+            else:
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"Failed to update messages: {error_msg}"
+                )
+
+        # Create success response
+        response = UpdateMessagesResponse(
+            status="success",
+            request_id=request.request_id,
+            message=f"Successfully updated messages column for request_id: {request.request_id}"
+        )
+
+        logger.info(f"Successfully updated messages for request_id: {request.request_id}")
+        return response
+
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        logger.error(f"Error updating messages column: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail="Internal server error while updating messages"
         )
 
 @app.get("/")

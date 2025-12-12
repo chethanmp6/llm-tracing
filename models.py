@@ -20,6 +20,7 @@ class LiteLLMSpendLogs(Base):
     api_key = Column(String)
     spend = Column(Float)
     metadata = Column(JSONB)
+    messages = Column(JSONB)
 
 class LiteLLMRequestTable(Base):
     __tablename__ = "LiteLLM_RequestTable"
